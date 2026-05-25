@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import CounterCard from "@/components/counter-card";
-import FreeClickControls from "@/components/free-click-controls";
+import InfluenceControls from "@/components/influence-controls";
 import ActivityFeed from "@/components/activity-feed";
 
 type FeedItem = {
@@ -30,19 +30,22 @@ export default function HomeShell({ initialState, initialFeed }: Props) {
   const [freeActionsCount, setFreeActionsCount] = useState(initialState.freeActionsCount);
 
   return (
-    <main className="mx-auto max-w-4xl p-6 md:p-10">
-      <div className="mb-8">
-        <div className="inline-flex rounded-full border border-black/10 bg-white px-4 py-2 text-sm font-medium text-black/70 shadow-sm">
+    <main className="mx-auto max-w-5xl p-6 md:p-12 font-sans">
+      <div className="mb-10 text-center md:text-left">
+        <div className="inline-flex rounded-full border border-black/10 bg-white px-5 py-2 text-sm font-bold text-gray-600 shadow-sm mb-4">
           Countt · Social Experiment
         </div>
-        <h1 className="mt-4 text-4xl font-bold tracking-tight">One global number. Everyone can move it.</h1>
-        <p className="mt-3 max-w-2xl text-black/65 text-lg">
-          Add or subtract 0.25 once for free. Every action changes the shared counter for everyone.
+        <h1 className="text-5xl md:text-6xl font-black tracking-tight leading-tight">
+          One global number.<br/>Everyone can move it.
+        </h1>
+        <p className="mt-4 max-w-2xl text-xl text-gray-500 font-medium leading-relaxed">
+          Choose to add or subtract. Every action, free or paid, 
+          shapes our shared outcome in real-time.
         </p>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-        <div className="space-y-6">
+      <div className="grid gap-8 lg:grid-cols-[1.2fr_0.8fr]">
+        <div className="space-y-8">
           <CounterCard
             currentValue={counter}
             freeActionsCount={freeActionsCount}
@@ -50,8 +53,7 @@ export default function HomeShell({ initialState, initialFeed }: Props) {
             totalRevenueUsd={initialState.totalRevenueUsd}
           />
 
-          <FreeClickControls
-            initialCounter={counter}
+          <InfluenceControls
             onLocalAction={(item, nextCounter) => {
               setCounter(nextCounter);
               setFreeActionsCount((n) => n + 1);

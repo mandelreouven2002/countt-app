@@ -12,24 +12,24 @@ export default function CounterCard({
   totalRevenueUsd,
 }: Props) {
   return (
-    <section className="rounded-3xl border border-black/10 bg-white p-6 shadow-sm">
-      <p className="text-sm uppercase tracking-wide text-black/60">Global Counter</p>
-      <div className="mt-3 text-5xl font-bold tracking-tight">
+    <section className="rounded-[2rem] border border-black/5 bg-white p-8 shadow-sm">
+      <p className="text-sm font-semibold tracking-wide text-black/40 mb-2 uppercase">Global Counter</p>
+      <div className="text-7xl font-black tracking-tighter">
         {currentValue.toFixed(2)}
       </div>
 
-      <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <div className="rounded-2xl bg-black/[0.03] p-4">
-          <div className="text-sm text-black/60">Free actions</div>
-          <div className="mt-1 text-2xl font-semibold">{freeActionsCount}</div>
+      <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="rounded-2xl bg-gray-50 p-5">
+          <div className="text-sm font-medium text-gray-500">Free actions</div>
+          <div className="mt-1 text-3xl font-bold">{freeActionsCount}</div>
         </div>
-        <div className="rounded-2xl bg-black/[0.03] p-4">
-          <div className="text-sm text-black/60">Paid actions</div>
-          <div className="mt-1 text-2xl font-semibold">{paidActionsCount}</div>
+        <div className="rounded-2xl bg-gray-50 p-5">
+          <div className="text-sm font-medium text-gray-500">Paid actions</div>
+          <div className="mt-1 text-3xl font-bold">{paidActionsCount}</div>
         </div>
-        <div className="rounded-2xl bg-black/[0.03] p-4">
-          <div className="text-sm text-black/60">Revenue</div>
-          <div className="mt-1 text-2xl font-semibold">${totalRevenueUsd.toFixed(2)}</div>
+        <div className="rounded-2xl bg-gray-50 p-5">
+          <div className="text-sm font-medium text-gray-500">Revenue</div>
+          <div className="mt-1 text-3xl font-bold">${totalRevenueUsd.toFixed(2)}</div>
         </div>
       </div>
     </section>
