@@ -34,13 +34,19 @@ export async function POST(request: Request) {
 
     const ipHash = hashIp(clientIp);
 
+    // חילוץ המדינה ישירות משרתי ההפצה של האינטרנט
+    const countryCode = request.headers.get("cf-ipcountry") 
+                     || request.headers.get("x-vercel-ip-country") 
+                     || request.headers.get("x-client-geo-location") 
+                     || null;
+
     const result = await createFreeAction({
       ipHash,
       direction: parsed.data.direction,
       consentVersion: parsed.data.consentVersion,
       ageGroup: parsed.data.ageGroup,
       gender: parsed.data.gender,
-      countryCode: null,
+      countryCode: countryCode,
     });
 
     return NextResponse.json({
