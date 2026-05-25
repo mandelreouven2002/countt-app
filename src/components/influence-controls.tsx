@@ -18,7 +18,6 @@ type Props = {
 
 export default function InfluenceControls({ onLocalAction }: Props) {
   const [isOpen, setIsOpen] = useState(false);
-  // הוספנו את שלב 3 עבור המחשבון
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -68,10 +67,11 @@ export default function InfluenceControls({ onLocalAction }: Props) {
     setStep(2);
   }
 
-  // הפונקציה המתמטית לחישוב הקליקים
+  // הפונקציה המתמטית המעודכנת לחישוב הקליקים: f(x) = x * (1 + ln(x)/10)
   function calculateClicks(x: number) {
     if (isNaN(x) || x < 1) return 0;
-    const clicks = Math.floor(x + 2 * Math.sqrt(x) - 2);
+    // Math.log ב-JS הוא הלוגריתם הטבעי (ln)
+    const clicks = Math.floor(x * (1 + Math.log(x) / 10));
     return clicks > 0 ? clicks : 0;
   }
 
@@ -127,7 +127,6 @@ export default function InfluenceControls({ onLocalAction }: Props) {
 
       {isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          {/* ה-div הזה מתרחב ומתכווץ בהתאם לשלב - transition-all */}
           <div 
             className={`bg-white rounded-[2rem] w-full p-8 shadow-2xl relative transition-all duration-300 ease-in-out ${
               step === 3 ? "max-w-xl" : "max-w-md"
@@ -320,7 +319,6 @@ export default function InfluenceControls({ onLocalAction }: Props) {
                   </div>
                 </div>
 
-                {/* בחירת כיוון עבור התשלום */}
                 <div className="space-y-4">
                   <h3 className="text-center font-bold text-gray-700">Action Direction</h3>
                   <div className="grid grid-cols-2 gap-4">
@@ -343,7 +341,6 @@ export default function InfluenceControls({ onLocalAction }: Props) {
                   </div>
                 </div>
 
-                {/* צ'קבוקס תנאים חמור לתשלום */}
                 <div className="flex items-start gap-3 bg-blue-50/50 p-4 rounded-2xl border border-blue-100">
                   <input 
                     type="checkbox" 
@@ -357,7 +354,6 @@ export default function InfluenceControls({ onLocalAction }: Props) {
                   </label>
                 </div>
 
-                {/* כפתורי פעולה */}
                 <div className="grid grid-cols-[1fr_2fr] gap-4 pt-2">
                   <button 
                     onClick={() => setStep(2)}
