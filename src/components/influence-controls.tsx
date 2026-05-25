@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import Link from "next/link";
 
 type FeedItem = {
@@ -21,12 +21,25 @@ export default function InfluenceControls({ onLocalAction }: Props) {
   const [step, setStep] = useState<1 | 2>(1);
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  
+  // משתנה חדש שבודק האם המשתמש כבר ניצל את הפעולה שלו
+  const [hasClaimed, setHasClaimed] = useState(false);
 
   // Form state
   const [direction, setDirection] = useState<"add" | "sub" | null>(null);
   const [ageGroup, setAgeGroup] = useState("");
   const [gender, setGender] = useState("");
   const [consent, setConsent] = useState(false);
+
+  // בדיקה מול זיכרון הדפדפן ברגע שהקומפוננטה נטענת
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const claimed = localStorage.getItem("countt_free_claimed");
+      if (claimed === "true") {
+        setHasClaimed(true);
+      }
+    }
+  }, []);
 
   function resetAndOpen() {
     setStep(1);
@@ -64,24 +77,22 @@ export default function InfluenceControls({ onLocalAction }: Props) {
 
       const data = await res.json();
 
+      // טיפול במצב שבו השרת מזהה שהמשתמש כבר הצביע (למשל ממכשיר אחר באותה רשת)
+      if (res.status === 409 || data.error === "Free click already used") {
+        setHasClaimed(true);
+        localStorage.setItem("countt_free_claimed", "true");
+        setError("You have already used your free action.");
+        return;
+      }
+
       if (!res.ok) {
         setError(data.error ?? "Action failed, please try again.");
         return;
       }
 
-      onLocalAction?.(
-        {
-          id: Math.random().toString(36).substring(7),
-          direction: direction as "add" | "sub",
-          amount: 0.25,
-          kind: "free",
-          countryCode: null,
-          createdAt: new Date().toISOString(),
-        },
-        Number(data.counter)
-      );
-      
-      setIsOpen(false);
+      // הצלחה! שומרים בזיכרון המקומי ומרעננים את העמוד
+      localStorage.setItem("countt_free_claimed", "true");
+      window.location.reload();
     });
   }
 
@@ -187,20 +198,24 @@ export default function InfluenceControls({ onLocalAction }: Props) {
                 
                 <div className="space-y-4">
                   {/* Free Option */}
-                  <div className="p-5 rounded-2xl border-2 border-gray-900 bg-white shadow-sm flex flex-col gap-4">
+                  <div className={`p-5 rounded-2xl border-2 transition-all flex flex-col gap-4 ${hasClaimed ? 'border-gray-200 bg-gray-50' : 'border-gray-900 bg-white shadow-sm'}`}>
                     <div className="flex justify-between items-center">
-                      <span className="font-bold text-lg">Standard Impact</span>
-                      <span className="bg-gray-100 px-3 py-1 rounded-full text-sm font-bold">Free</span>
+                      <span className={`font-bold text-lg ${hasClaimed ? 'text-gray-400' : 'text-black'}`}>Standard Impact</span>
+                      <span className="bg-gray-100 px-3 py-1 rounded-full text-sm font-bold text-gray-500">Free</span>
                     </div>
-                    <p className="text-sm text-gray-500">
+                    <p className={`text-sm ${hasClaimed ? 'text-gray-400' : 'text-gray-500'}`}>
                       Change the global counter by {direction === "add" ? "+0.25" : "-0.25"} (One-time action).
                     </p>
                     <button
                       onClick={executeFreeAction}
-                      disabled={isPending}
-                      className="w-full rounded-full bg-black text-white font-bold py-3 hover:bg-gray-800 disabled:opacity-50 transition-all"
+                      disabled={isPending || hasClaimed}
+                      className={`w-full rounded-full font-bold py-3 transition-all ${
+                        hasClaimed || isPending 
+                          ? 'bg-gray-200 text-gray-400 cursor-not-allowed opacity-70' 
+                          : 'bg-black text-white hover:bg-gray-800'
+                      }`}
                     >
-                      {isPending ? "Applying..." : "Make Impact"}
+                      {hasClaimed ? "Already Used" : isPending ? "Applying..." : "Make Impact"}
                     </button>
                   </div>
 
@@ -221,10 +236,12 @@ export default function InfluenceControls({ onLocalAction }: Props) {
                     </button>
                   </div>
                 </div>
+                
+                {error && <p className="text-red-500 text-sm font-bold text-center mt-2">{error}</p>}
 
                 <button 
                   onClick={() => setStep(1)}
-                  className="w-full text-sm font-medium text-gray-500 hover:text-black mt-4"
+                  className="w-full text-sm font-medium text-gray-500 hover:text-black mt-2"
                 >
                   &larr; Go back
                 </button>
