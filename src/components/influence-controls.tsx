@@ -23,24 +23,52 @@ export default function InfluenceControls({ onLocalAction }: Props) {
   const [error, setError] = useState<string | null>(null);
   
   const [hasClaimed, setHasClaimed] = useState(false);
+  const [timeLeft, setTimeLeft] = useState<string | null>(null);
 
-  // סטייט עבור השלב הראשון (חינם)
   const [direction, setDirection] = useState<"add" | "sub" | null>(null);
   const [ageGroup, setAgeGroup] = useState("");
   const [gender, setGender] = useState("");
   const [consent, setConsent] = useState(false);
 
-  // סטייט עבור שלב 3 (המחשבון בתשלום)
   const [usdAmount, setUsdAmount] = useState<number>(1);
   const [paidDirection, setPaidDirection] = useState<"add" | "sub">("add");
   const [paidConsent, setPaidConsent] = useState(false);
 
+  // מנגנון בדיקת טיימר מול הזיכרון המקומי
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const claimed = localStorage.getItem("countt_free_claimed");
-      if (claimed === "true") {
-        setHasClaimed(true);
-      }
+      const checkTime = () => {
+        const claimTime = localStorage.getItem("countt_free_claim_time");
+        const legacyClaim = localStorage.getItem("countt_free_claimed"); // עבור משתמשים שהצביעו אתמול
+        
+        if (claimTime) {
+          const elapsedMs = Date.now() - parseInt(claimTime);
+          const msIn24h = 24 * 60 * 60 * 1000;
+          
+          if (elapsedMs < msIn24h) {
+            setHasClaimed(true);
+            const remainingMs = msIn24h - elapsedMs;
+            const h = Math.floor(remainingMs / (1000 * 60 * 60));
+            const m = Math.floor((remainingMs % (1000 * 60 * 60)) / (1000 * 60));
+            setTimeLeft(`${h}h ${m}m`);
+          } else {
+            // עברו 24 שעות! משחררים את הכפתור.
+            setHasClaimed(false);
+            localStorage.removeItem("countt_free_claim_time");
+            setTimeLeft(null);
+          }
+        } else if (legacyClaim === "true") {
+          // שדרוג משתמשים ישנים למערכת הזמן החדשה
+          localStorage.setItem("countt_free_claim_time", Date.now().toString());
+          localStorage.removeItem("countt_free_claimed");
+          setHasClaimed(true);
+          setTimeLeft("23h 59m");
+        }
+      };
+
+      checkTime();
+      const interval = setInterval(checkTime, 60000); // רענון הטיימר כל דקה
+      return () => clearInterval(interval);
     }
   }, []);
 
@@ -51,10 +79,8 @@ export default function InfluenceControls({ onLocalAction }: Props) {
     setGender("");
     setConsent(false);
     setError(null);
-    
     setUsdAmount(1);
     setPaidConsent(false);
-    
     setIsOpen(true);
   }
 
@@ -67,10 +93,8 @@ export default function InfluenceControls({ onLocalAction }: Props) {
     setStep(2);
   }
 
-  // הפונקציה המתמטית המעודכנת לחישוב הקליקים: f(x) = x * (1 + ln(x)/10)
   function calculateClicks(x: number) {
     if (isNaN(x) || x < 1) return 0;
-    // Math.log ב-JS הוא הלוגריתם הטבעי (ln)
     const clicks = Math.floor(x * (1 + Math.log(x) / 10));
     return clicks > 0 ? clicks : 0;
   }
@@ -94,10 +118,10 @@ export default function InfluenceControls({ onLocalAction }: Props) {
 
       const data = await res.json();
 
-      if (res.status === 409 || data.error === "Free click already used") {
+      if (res.status === 409 || data.error?.includes("already claimed")) {
         setHasClaimed(true);
-        localStorage.setItem("countt_free_claimed", "true");
-        setError("You have already used your free action.");
+        localStorage.setItem("countt_free_claim_time", Date.now().toString());
+        setError("Action already used recently. Please wait 24 hours.");
         return;
       }
 
@@ -106,12 +130,11 @@ export default function InfluenceControls({ onLocalAction }: Props) {
         return;
       }
 
-      localStorage.setItem("countt_free_claimed", "true");
+      localStorage.setItem("countt_free_claim_time", Date.now().toString());
       window.location.reload();
     });
   }
 
-  // פונקציית דמה לשער התשלום העתידי
   function proceedToCheckout() {
     alert(`Payment Gateway Integration Coming Soon!\n\nYou selected to ${paidDirection} ${currentClicks} clicks for $${usdAmount}.`);
   }
@@ -223,14 +246,13 @@ export default function InfluenceControls({ onLocalAction }: Props) {
                 <h2 className="text-2xl font-bold text-center mb-6">Choose Your Path</h2>
                 
                 <div className="space-y-4">
-                  {/* Free Option */}
                   <div className={`p-5 rounded-2xl border-2 transition-all flex flex-col gap-4 ${hasClaimed ? 'border-gray-200 bg-gray-50' : 'border-gray-900 bg-white shadow-sm'}`}>
                     <div className="flex justify-between items-center">
                       <span className={`font-bold text-lg ${hasClaimed ? 'text-gray-400' : 'text-black'}`}>Standard Impact</span>
                       <span className="bg-gray-100 px-3 py-1 rounded-full text-sm font-bold text-gray-500">Free</span>
                     </div>
                     <p className={`text-sm ${hasClaimed ? 'text-gray-400' : 'text-gray-500'}`}>
-                      Change the global counter by {direction === "add" ? "+0.25" : "-0.25"} (One-time action).
+                      Change the global counter by {direction === "add" ? "+0.25" : "-0.25"} (Refreshes every 24 hours).
                     </p>
                     <button
                       onClick={executeFreeAction}
@@ -241,11 +263,10 @@ export default function InfluenceControls({ onLocalAction }: Props) {
                           : 'bg-black text-white hover:bg-gray-800'
                       }`}
                     >
-                      {hasClaimed ? "Already Used" : isPending ? "Applying..." : "Make Impact"}
+                      {hasClaimed ? `Available in ${timeLeft}` : isPending ? "Applying..." : "Make Impact"}
                     </button>
                   </div>
 
-                  {/* Paid Option */}
                   <div className="p-5 rounded-2xl border-2 border-blue-100 bg-blue-50/30 flex flex-col gap-4 transition-colors hover:border-blue-200">
                     <div className="flex justify-between items-center">
                       <span className="font-bold text-lg text-blue-900">Powerful Impact</span>
@@ -284,7 +305,6 @@ export default function InfluenceControls({ onLocalAction }: Props) {
                   <p className="text-gray-500 font-medium">Convert your contribution into direct counter action.</p>
                 </div>
 
-                {/* המחשבון עצמו */}
                 <div className="flex flex-col md:flex-row items-center justify-between gap-6 bg-gray-50 p-6 rounded-3xl border border-gray-100">
                   <div className="flex flex-col items-center gap-2">
                     <span className="text-sm font-bold text-gray-400 uppercase tracking-widest">Amount (USD)</span>
