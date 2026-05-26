@@ -9,6 +9,7 @@ const bodySchema = z.object({
   consentVersion: z.string().min(1),
   ageGroup: z.string().optional(),
   gender: z.string().optional(),
+  countryCode: z.string().optional(), // שדה חדש שהדפדפן שולח
 });
 
 export async function POST(request: Request) {
@@ -34,8 +35,9 @@ export async function POST(request: Request) {
 
     const ipHash = hashIp(clientIp);
 
-    // חילוץ המדינה ישירות משרתי ההפצה של האינטרנט
-    const countryCode = request.headers.get("cf-ipcountry") 
+    // עכשיו המערכת קודם כל לוקחת את המדינה שהמשתמש בחר באופן ידני, ואם אין - מנסה מההדרים
+    const countryCode = parsed.data.countryCode 
+                     || request.headers.get("cf-ipcountry") 
                      || request.headers.get("x-vercel-ip-country") 
                      || request.headers.get("x-client-geo-location") 
                      || null;
@@ -46,7 +48,7 @@ export async function POST(request: Request) {
       consentVersion: parsed.data.consentVersion,
       ageGroup: parsed.data.ageGroup,
       gender: parsed.data.gender,
-      countryCode: countryCode,
+      countryCode: countryCode ? countryCode.toUpperCase() : null,
     });
 
     return NextResponse.json({
