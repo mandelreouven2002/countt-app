@@ -1,3 +1,8 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+echo "==> Upgrading SEO, OpenGraph, and AIO Metadata..."
+cat > src/app/layout.tsx <<'EOF'
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import Navbar from "@/components/navbar";
@@ -74,3 +79,11 @@ export default function RootLayout({
     </html>
   );
 }
+EOF
+
+echo "==> Committing and pushing..."
+git add .
+git commit -m "Install Stripe and upgrade global SEO/OG metadata"
+git push
+
+echo "🚀 Done! Infrastructure is fully ready."
