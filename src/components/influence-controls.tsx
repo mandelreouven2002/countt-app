@@ -34,12 +34,11 @@ export default function InfluenceControls({ onLocalAction }: Props) {
   const [paidDirection, setPaidDirection] = useState<"add" | "sub">("add");
   const [paidConsent, setPaidConsent] = useState(false);
 
-  // מנגנון בדיקת טיימר מול הזיכרון המקומי
   useEffect(() => {
     if (typeof window !== "undefined") {
       const checkTime = () => {
         const claimTime = localStorage.getItem("countt_free_claim_time");
-        const legacyClaim = localStorage.getItem("countt_free_claimed"); // עבור משתמשים שהצביעו אתמול
+        const legacyClaim = localStorage.getItem("countt_free_claimed");
         
         if (claimTime) {
           const elapsedMs = Date.now() - parseInt(claimTime);
@@ -52,13 +51,11 @@ export default function InfluenceControls({ onLocalAction }: Props) {
             const m = Math.floor((remainingMs % (1000 * 60 * 60)) / (1000 * 60));
             setTimeLeft(`${h}h ${m}m`);
           } else {
-            // עברו 24 שעות! משחררים את הכפתור.
             setHasClaimed(false);
             localStorage.removeItem("countt_free_claim_time");
             setTimeLeft(null);
           }
         } else if (legacyClaim === "true") {
-          // שדרוג משתמשים ישנים למערכת הזמן החדשה
           localStorage.setItem("countt_free_claim_time", Date.now().toString());
           localStorage.removeItem("countt_free_claimed");
           setHasClaimed(true);
@@ -67,7 +64,7 @@ export default function InfluenceControls({ onLocalAction }: Props) {
       };
 
       checkTime();
-      const interval = setInterval(checkTime, 60000); // רענון הטיימר כל דקה
+      const interval = setInterval(checkTime, 60000);
       return () => clearInterval(interval);
     }
   }, []);
@@ -118,7 +115,7 @@ export default function InfluenceControls({ onLocalAction }: Props) {
 
       const data = await res.json();
 
-      if (res.status === 409 || data.error?.includes("already claimed")) {
+      if (res.status === 409 || data.error?.includes("already claimed") || data.error?.includes("last 24 hours")) {
         setHasClaimed(true);
         localStorage.setItem("countt_free_claim_time", Date.now().toString());
         setError("Action already used recently. Please wait 24 hours.");
@@ -130,8 +127,24 @@ export default function InfluenceControls({ onLocalAction }: Props) {
         return;
       }
 
+      // במקום לרענן את העמוד, אנחנו סוגרים את החלונית ומעדכנים מידית (Optimistic Update)
       localStorage.setItem("countt_free_claim_time", Date.now().toString());
-      window.location.reload();
+      setTimeLeft("23h 59m");
+      setHasClaimed(true);
+      
+      onLocalAction?.(
+        {
+          id: Math.random().toString(36).substring(7),
+          direction: direction as "add" | "sub",
+          amount: 0.25,
+          kind: "free",
+          countryCode: null,
+          createdAt: new Date().toISOString(),
+        },
+        Number(data.counter)
+      );
+
+      setIsOpen(false);
     });
   }
 
@@ -163,7 +176,7 @@ export default function InfluenceControls({ onLocalAction }: Props) {
             </button>
 
             {step === 1 && (
-              <div className="space-y-6 animate-in slide-in-from-right-4 duration-300">
+              <div className="space-y-6 animate-in slide-in-from-right-4 duration-300 text-left">
                 <h2 className="text-2xl font-bold text-center">How do you want to influence?</h2>
                 
                 <div className="grid grid-cols-2 gap-4">
@@ -242,7 +255,7 @@ export default function InfluenceControls({ onLocalAction }: Props) {
             )}
 
             {step === 2 && (
-              <div className="space-y-6 animate-in slide-in-from-right-4 duration-300">
+              <div className="space-y-6 animate-in slide-in-from-right-4 duration-300 text-left">
                 <h2 className="text-2xl font-bold text-center mb-6">Choose Your Path</h2>
                 
                 <div className="space-y-4">
@@ -361,7 +374,7 @@ export default function InfluenceControls({ onLocalAction }: Props) {
                   </div>
                 </div>
 
-                <div className="flex items-start gap-3 bg-blue-50/50 p-4 rounded-2xl border border-blue-100">
+                <div className="flex items-start gap-3 bg-blue-50/50 p-4 rounded-2xl border border-blue-100 text-left">
                   <input 
                     type="checkbox" 
                     id="paidConsent"
